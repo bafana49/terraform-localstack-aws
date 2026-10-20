@@ -1,0 +1,5 @@
+.terraform/
+*.tfstate
+*.tfstae.backup
+*.zip
+response.json
