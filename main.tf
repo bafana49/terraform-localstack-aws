@@ -36,3 +36,31 @@ resource "aws_s3_object" "index" {
   content      = "<h1>Hello from fake AWS!</h1>"
   content_type = "text/html"
 }
+
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/handler.py"
+  output_path = "${path.module}/lambda/handler.zip"
+}
+
+resource "aws_iam_role" "lambda_role" {
+  name = "hello-lambda-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRole"
+      Principal = { Service = "lambda.amazonaws.com" }
+    }]
+  })
+}
+
+resource "aws_lambda_function" "hello" {
+  function_name    = "hello-function"
+  role             = aws_iam_role.lambda_role.arn
+  runtime          = "python3.12"
+  handler          = "handler.lambda_handler"
+  filename         = data.archive_file.lambda_zip.output_path
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+}
